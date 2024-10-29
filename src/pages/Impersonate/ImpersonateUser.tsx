@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Col, Row, InputGroup, Form, Button, Dropdown } from "react-bootstrap";
+import { Col, Row, InputGroup, Form, Button, Dropdown, Spinner } from "react-bootstrap";
 import useAPI from "hooks/useAPI";
 import debounce from "lodash.debounce";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,6 +18,7 @@ const ImpersonateUser: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debounceActive, setDebounceActive] = useState(false);
   const [impersonateActive, setImpersonateActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   // const [originalToken, setOriginalToken] = useState("");
   const dispatch = useDispatch();
 
@@ -95,7 +96,10 @@ const ImpersonateUser: React.FC = () => {
 
   // Impersonate user
   const handleImpersonate = () => {
-    // setOriginalToken(auth.authToken);
+    //setOriginalToken(auth.authToken); // Store the original token
+    setIsLoading(true); // Start loading spinner
+  
+    // Send impersonation request
     impersonateUser({
       method: "post",
       url: "/impersonate",
@@ -103,10 +107,12 @@ const ImpersonateUser: React.FC = () => {
         impersonate_id: searchQuery,
       },
     });
-    if (impersonateUserResponse?.data && impersonateUserResponse?.status == 200) {
-      // console.log("POST HTML Status:", impersonateUserResponse?.status);
+  
+    // Assume impersonation is successful and set states accordingly
+    if (impersonateUserResponse?.data && impersonateUserResponse?.status === 200) {
       setImpersonateActive(true);
     }
+    setIsLoading(false); // Stop loading spinner
   };
 
   // Impersonate user alert
@@ -119,6 +125,7 @@ const ImpersonateUser: React.FC = () => {
   // Cancel impersonation
   const handleCancelImpersonate = () => {
     setImpersonateActive(false);
+    setIsLoading(false);
     /* if (originalToken) {
       auth.authToken = originalToken;
       setImpersonateActive(false);
@@ -197,14 +204,47 @@ const ImpersonateUser: React.FC = () => {
               variant="outline-secondary"
               id="button-addon2"
               onClick={handleImpersonate}
-              disabled={impersonateActive}
+              disabled={impersonateActive || isLoading}
             >
-              Impersonate
+              {impersonateActive ? "Impersonating..." : "Impersonate"}
             </Button>
+            {/* Independent Spinning Dot */}
+            {impersonateActive && <div className="loader"></div>}
           </InputGroup>
           {displayUserList()}
         </div>
       </div>
+      <style>
+        {`
+          .loader {
+            width: 50px;
+            aspect-ratio: 1;
+            display: grid;
+            border-radius: 50%;
+            background:
+              linear-gradient(0deg ,rgb(0 0 0/50%) 30%,#0000 0 70%,rgb(0 0 0/100%) 0) 50%/8% 100%,
+              linear-gradient(90deg,rgb(0 0 0/25%) 30%,#0000 0 70%,rgb(0 0 0/75% ) 0) 50%/100% 8%;
+            background-repeat: no-repeat;
+            animation: l23 1s infinite steps(12);
+          }
+          .loader::before,
+          .loader::after {
+            content: "";
+            grid-area: 1/1;
+            border-radius: 50%;
+            background: inherit;
+            opacity: 0.915;
+            transform: rotate(30deg);
+          }
+          .loader::after {
+            opacity: 0.83;
+            transform: rotate(60deg);
+          }
+          @keyframes l23 {
+            100% {transform: rotate(1turn)}
+          }
+        `}
+      </style>
     </>
   );
 };
